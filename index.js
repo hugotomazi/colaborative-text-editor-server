@@ -15,20 +15,71 @@ app.get('/', (req, res) => {
 
 let clients = []
 let content = ""
+let typing = {
+    username: null,
+    id: null
+}
+let timer
 
-io.on('connect', (client) => {
-    clients.push(client)
-    client.emit('update', content)
+function updateUsersList() {
+    clients.forEach(c => c.client.emit('updateUsersList', { users: clients.map(c => c.data.username) }))
+}
 
-    console.log('Novo cliente conectado!')
-    client.on('type', (data) => {
+function onType(client, data) {
+    if (typing.id === client.id || typing.id === null) {
         content = data
-        clients.forEach((c) => {
-            if (c.id !== client.id)
-                c.emit('update', content)
+        clients.forEach(c => {
+            if (c.client.id !== client.id)
+                return
+            typing.username = c.data.username
+            typing.id = c.client.id
         })
+        clients.forEach(c => {
+            if (c.client.id === client.id)
+                return c.client.emit('typing', typing.username)
+
+            c.client.emit('update', content)
+            c.client.emit('typing', typing.username)
+
+        })
+        console.log(typing.username)
+        clearTimeout(timer)
+        timer = setTimeout(() => {
+            typing.id = null
+            typing.username = null
+            clients.forEach(c => c.client.emit('typing', null))
+            console.log(typing.username)
+        }, 600)
+    }
+}
+
+function identify(client, username) {
+    console.log('Novo cliente conectado!')
+
+    clients.push({
+        data: {
+            username: username
+        },
+        client: client
     })
-})
+    updateUsersList()
+    client.on('type', data => onType(client, data))
+    client.on('disconnect', () => disconnect(client))
+    client.emit('update', content)
+}
+
+function disconnect(client) {
+    clients.forEach((c, idx) => {
+        if (c.client.id === client.id)
+            clients.splice(idx, 1)
+    })
+    updateUsersList()
+}
+
+function connect(client) {
+    client.on('identify', username => identify(client, username))
+}
+io.on('connect', (client) => connect(client))
 
 http.listen(port, function() {
     console.log(`Servidor inicializado na porta ${port}`)
