@@ -9,9 +9,9 @@ const port = process.env.PORT || 3000
 
 
 app.use(express.static('public'))
-app.get('/', (req, res) => {
-    res.sendFile(path.resolve('public/index.html'))
-})
+app.get('/', (req, res) => res.sendFile(path.resolve('public/index.html')))
+app.get('/login', (req, res) => res.redirect('/'))
+app.get('/texteditor', (req, res) => res.redirect('/'))
 
 let clients = []
 let content = ""
