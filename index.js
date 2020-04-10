@@ -9,7 +9,12 @@ const port = process.env.PORT || 3000
 
 
 app.use(express.static('public'))
-    // app.get('*', (req, res) => res.redirect('https://' + req.headers.host + req.url))
+app.use(function(req, res, next) {
+    if (req.headers["x-forwarded-proto"] === "https")
+        return next();
+
+    res.redirect("https://" + req.headers.host + req.url);
+});
 app.get('/', (req, res) => res.sendFile(path.resolve('public/index.html')))
 
 let clients = []
