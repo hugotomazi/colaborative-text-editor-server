@@ -6,13 +6,16 @@ const io = require('socket.io')(http)
 const path = require('path')
 
 const port = process.env.PORT || 3000
+const useHTTPS = process.env.HTTPS || false
 
-app.use(function(req, res, next) {
-    if (req.headers["x-forwarded-proto"] === "https")
-        return next();
+if (useHTTPS) {
+    app.use(function(req, res, next) {
+        if (req.headers["x-forwarded-proto"] === "https")
+            return next();
 
-    res.redirect("https://" + req.headers.host + req.url);
-});
+        res.redirect("https://" + req.headers.host + req.url);
+    });
+}
 
 app.use(express.static('public'))
 app.get('/', (req, res) => res.sendFile(path.resolve('public/index.html')))
@@ -46,19 +49,17 @@ function onType(client, data) {
             c.client.emit('typing', typing.username)
 
         })
-        console.log(typing.username)
         clearTimeout(timer)
         timer = setTimeout(() => {
             typing.id = null
             typing.username = null
             clients.forEach(c => c.client.emit('typing', null))
-            console.log(typing.username)
         }, 600)
     }
 }
 
 function identify(client, username) {
-    console.log('Novo cliente conectado!')
+    console.log(`Novo cliente conectado : ${username}`)
 
     clients.push({
         data: {
@@ -83,6 +84,7 @@ function disconnect(client) {
 function connect(client) {
     client.on('identify', username => identify(client, username))
 }
+
 io.on('connect', (client) => connect(client))
 
 http.listen(port, function() {
