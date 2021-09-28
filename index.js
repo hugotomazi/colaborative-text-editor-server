@@ -1,9 +1,11 @@
 const express = require('express')
 var app = express()
 
-const http = require('http').Server(app);
+const http = require('http').createServer(app);
 const io = require('socket.io')(http)
 const path = require('path')
+
+io.origins(['http://localhost:3000', 'http://127.0.0.1:3000', 'http://127.0.0.1:4200', 'http://localhost:4200', 'https://colaborative-text-editor-serve.herokuapp.com'])
 
 const port = process.env.PORT || 3000
 const useHTTPS = process.env.HTTPS || false
